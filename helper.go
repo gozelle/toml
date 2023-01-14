@@ -21,3 +21,8 @@ func MarshalString(v interface{}) (string, error) {
 	}
 	return string(b), nil
 }
+
+func UnmarshalFile(path string, v interface{}) error {
+	_, err := DecodeFile(path, v)
+	return err
+}
