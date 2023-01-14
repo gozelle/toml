@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 	"unicode/utf8"
-
-	"github.com/BurntSushi/toml/internal"
+	
+	"github.com/gozelle/toml/internal"
 )
 
 type parser struct {
@@ -15,9 +15,9 @@ type parser struct {
 	context    Key      // Full key for the current hash in scope.
 	currentKey string   // Base key name for everything except hashes.
 	pos        Position // Current position in the TOML file.
-
+	
 	ordered []Key // List of keys in the order that they appear in the TOML data.
-
+	
 	keyInfo   map[string]keyInfo     // Map keyname → info about the TOML key.
 	mapping   map[string]interface{} // Map keyname → key value.
 	implicits map[string]struct{}    // Record implicit keys (e.g. "key.group.names").
@@ -39,13 +39,13 @@ func parse(data string) (p *parser, err error) {
 			panic(r)
 		}
 	}()
-
+	
 	// Read over BOM; do this here as the lexer calls utf8.DecodeRuneInString()
 	// which mangles stuff.
 	if strings.HasPrefix(data, "\xff\xfe") || strings.HasPrefix(data, "\xfe\xff") {
 		data = data[2:]
 	}
-
+	
 	// Examine first few bytes for NULL bytes; this probably means it's a UTF-16
 	// file (second byte in surrogate pair being NULL). Again, do this here to
 	// avoid having to deal with UTF-8/16 stuff in the lexer.
@@ -61,7 +61,7 @@ func parse(data string) (p *parser, err error) {
 			input:    data,
 		}
 	}
-
+	
 	p = &parser{
 		keyInfo:   make(map[string]keyInfo),
 		mapping:   make(map[string]interface{}),
@@ -76,7 +76,7 @@ func parse(data string) (p *parser, err error) {
 		}
 		p.topLevel(item)
 	}
-
+	
 	return p, nil
 }
 
@@ -119,7 +119,7 @@ func (p *parser) next() item {
 				err:      it.err,
 			})
 		}
-
+		
 		p.panicItemf(it, "%s", it.val)
 	}
 	return it
@@ -153,25 +153,25 @@ func (p *parser) topLevel(item item) {
 		p.expect(itemText)
 	case itemTableStart: // [ .. ]
 		name := p.nextPos()
-
+		
 		var key Key
 		for ; name.typ != itemTableEnd && name.typ != itemEOF; name = p.next() {
 			key = append(key, p.keyString(name))
 		}
 		p.assertEqual(itemTableEnd, name.typ)
-
+		
 		p.addContext(key, false)
 		p.setType("", tomlHash, item.pos)
 		p.ordered = append(p.ordered, key)
 	case itemArrayTableStart: // [[ .. ]]
 		name := p.nextPos()
-
+		
 		var key Key
 		for ; name.typ != itemArrayTableEnd && name.typ != itemEOF; name = p.next() {
 			key = append(key, p.keyString(name))
 		}
 		p.assertEqual(itemArrayTableEnd, name.typ)
-
+		
 		p.addContext(key, true)
 		p.setType("", tomlArrayHash, item.pos)
 		p.ordered = append(p.ordered, key)
@@ -184,23 +184,23 @@ func (p *parser) topLevel(item item) {
 			key = append(key, p.keyString(k))
 		}
 		p.assertEqual(itemKeyEnd, k.typ)
-
+		
 		/// The current key is the last part.
 		p.currentKey = key[len(key)-1]
-
+		
 		/// All the other parts (if any) are the context; need to set each part
 		/// as implicit.
 		context := key[:len(key)-1]
 		for i := range context {
 			p.addImplicitContext(append(p.context, context[i:i+1]...))
 		}
-
+		
 		/// Set value.
 		vItem := p.next()
 		val, typ := p.value(vItem, false)
 		p.set(p.currentKey, val, typ, vItem.pos)
 		p.ordered = append(p.ordered, p.context.add(p.currentKey))
-
+		
 		/// Remove the context we added (preserving any context from [tbl] lines).
 		p.context = outerContext
 		p.currentKey = ""
@@ -273,7 +273,7 @@ func (p *parser) valueInteger(it item) (interface{}, tomlType) {
 	if numHasLeadingZero(it.val) {
 		p.panicItemf(it, "Invalid integer %q: cannot have leading zeroes", it.val)
 	}
-
+	
 	num, err := strconv.ParseInt(it.val, 0, 64)
 	if err != nil {
 		// Distinguish integer values. Normally, it'd be a bug if the lexer
@@ -360,10 +360,10 @@ func (p *parser) valueDatetime(it item) (interface{}, tomlType) {
 
 func (p *parser) valueArray(it item) (interface{}, tomlType) {
 	p.setType(p.currentKey, tomlArray, it.pos)
-
+	
 	var (
 		types []tomlType
-
+		
 		// Initialize to a non-nil empty slice. This makes it consistent with
 		// how S = [] decodes into a non-nil slice inside something like struct
 		// { S []string }. See #338
@@ -374,11 +374,11 @@ func (p *parser) valueArray(it item) (interface{}, tomlType) {
 			p.expect(itemText)
 			continue
 		}
-
+		
 		val, typ := p.value(it, true)
 		array = append(array, val)
 		types = append(types, typ)
-
+		
 		// XXX: types isn't used here, we need it to record the accurate type
 		// information.
 		//
@@ -395,21 +395,21 @@ func (p *parser) valueInlineTable(it item, parentIsArray bool) (interface{}, tom
 		outerContext = p.context
 		outerKey     = p.currentKey
 	)
-
+	
 	p.context = append(p.context, p.currentKey)
 	prevContext := p.context
 	p.currentKey = ""
-
+	
 	p.addImplicit(p.context)
 	p.addContext(p.context, parentIsArray)
-
+	
 	/// Loop over all table key/value pairs.
 	for it := p.next(); it.typ != itemInlineTableEnd; it = p.next() {
 		if it.typ == itemCommentStart {
 			p.expect(itemText)
 			continue
 		}
-
+		
 		/// Read all key parts.
 		k := p.nextPos()
 		var key Key
@@ -417,23 +417,23 @@ func (p *parser) valueInlineTable(it item, parentIsArray bool) (interface{}, tom
 			key = append(key, p.keyString(k))
 		}
 		p.assertEqual(itemKeyEnd, k.typ)
-
+		
 		/// The current key is the last part.
 		p.currentKey = key[len(key)-1]
-
+		
 		/// All the other parts (if any) are the context; need to set each part
 		/// as implicit.
 		context := key[:len(key)-1]
 		for i := range context {
 			p.addImplicitContext(append(p.context, context[i:i+1]...))
 		}
-
+		
 		/// Set the value.
 		val, typ := p.value(p.next(), false)
 		p.set(p.currentKey, val, typ, it.pos)
 		p.ordered = append(p.ordered, p.context.add(p.currentKey))
 		hash[p.currentKey] = val
-
+		
 		/// Restore context.
 		p.context = prevContext
 	}
@@ -468,7 +468,7 @@ func numUnderscoresOK(s string) bool {
 				return false
 			}
 		}
-
+		
 		// isHexadecimal is a superset of all the permissable characters
 		// surrounding an underscore.
 		accept = isHexadecimal(r)
@@ -495,22 +495,22 @@ func numPeriodsOK(s string) bool {
 // will create implicit hashes automatically.
 func (p *parser) addContext(key Key, array bool) {
 	var ok bool
-
+	
 	// Always start at the top level and drill down for our context.
 	hashContext := p.mapping
 	keyContext := make(Key, 0)
-
+	
 	// We only need implicit hashes for key[0:-1]
 	for _, k := range key[0 : len(key)-1] {
 		_, ok = hashContext[k]
 		keyContext = append(keyContext, k)
-
+		
 		// No key? Make an implicit hash and move on.
 		if !ok {
 			p.addImplicit(keyContext)
 			hashContext[k] = make(map[string]interface{})
 		}
-
+		
 		// If the hash context is actually an array of tables, then set
 		// the hash context to the last element in that array.
 		//
@@ -525,7 +525,7 @@ func (p *parser) addContext(key Key, array bool) {
 			p.panicf("Key '%s' was already created as a hash.", keyContext)
 		}
 	}
-
+	
 	p.context = keyContext
 	if array {
 		// If this is the first element for this array, then allocate a new
@@ -534,7 +534,7 @@ func (p *parser) addContext(key Key, array bool) {
 		if _, ok := hashContext[k]; !ok {
 			hashContext[k] = make([]map[string]interface{}, 0, 4)
 		}
-
+		
 		// Add a new table. But make sure the key hasn't already been used
 		// for something else.
 		if hash, ok := hashContext[k].([]map[string]interface{}); ok {
@@ -552,7 +552,7 @@ func (p *parser) addContext(key Key, array bool) {
 func (p *parser) set(key string, val interface{}, typ tomlType, pos Position) {
 	p.setValue(key, val)
 	p.setType(key, typ, pos)
-
+	
 }
 
 // setValue sets the given key to the given value in the current context.
@@ -582,7 +582,7 @@ func (p *parser) setValue(key string, value interface{}) {
 		}
 	}
 	keyContext = append(keyContext, key)
-
+	
 	if _, ok := hash[key]; ok {
 		// Normally redefining keys isn't allowed, but the key could have been
 		// defined implicitly and it's allowed to be redefined concretely. (See
@@ -602,12 +602,12 @@ func (p *parser) setValue(key string, value interface{}) {
 			p.removeImplicit(keyContext)
 			return
 		}
-
+		
 		// Otherwise, we have a concrete key trying to override a previous
 		// key, which is *always* wrong.
 		p.panicf("Key '%s' has already been defined.", keyContext)
 	}
-
+	
 	hash[key] = value
 }
 
@@ -669,11 +669,11 @@ func (p *parser) stripEscapedNewlines(s string) string {
 	if len(split) < 1 {
 		return s
 	}
-
+	
 	escNL := false // Keep track of the last non-blank line was escaped.
 	for i, line := range split {
 		line = strings.TrimRight(line, " \t\r")
-
+		
 		if len(line) == 0 || line[len(line)-1] != '\\' {
 			split[i] = strings.TrimRight(split[i], "\r")
 			if !escNL && i != len(split)-1 {
@@ -681,7 +681,7 @@ func (p *parser) stripEscapedNewlines(s string) string {
 			}
 			continue
 		}
-
+		
 		escBS := true
 		for j := len(line) - 1; j >= 0 && line[j] == '\\'; j-- {
 			escBS = !escBS
@@ -690,16 +690,16 @@ func (p *parser) stripEscapedNewlines(s string) string {
 			line = strings.TrimLeft(line, " \t\r")
 		}
 		escNL = !escBS
-
+		
 		if escBS {
 			split[i] += "\n"
 			continue
 		}
-
+		
 		if i == len(split)-1 {
 			p.panicf("invalid escape: '\\ '")
 		}
-
+		
 		split[i] = line[:len(line)-1] // Remove \
 		if len(split)-1 > i {
 			split[i+1] = strings.TrimLeft(split[i+1], " \t\r")

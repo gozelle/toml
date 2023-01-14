@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"math"
 	"time"
-
-	"github.com/BurntSushi/toml/internal"
+	
+	"github.com/gozelle/toml/internal"
 )
 
 // Add JSON tags to a data structure as expected by toml-test.
@@ -14,7 +14,7 @@ func Add(key string, tomlData interface{}) interface{} {
 	switch orig := tomlData.(type) {
 	default:
 		panic(fmt.Sprintf("Unknown type: %T", tomlData))
-
+	
 	// A table: we don't need to add any tags, just recurse for every table
 	// entry.
 	case map[string]interface{}:
@@ -23,7 +23,7 @@ func Add(key string, tomlData interface{}) interface{} {
 			typed[k] = Add(k, v)
 		}
 		return typed
-
+	
 	// An array: we don't need to add any tags, just recurse for every table
 	// entry.
 	case []map[string]interface{}:
@@ -38,7 +38,7 @@ func Add(key string, tomlData interface{}) interface{} {
 			typed[i] = Add("", v)
 		}
 		return typed
-
+	
 	// Datetime: tag as datetime.
 	case time.Time:
 		switch orig.Location() {
@@ -51,7 +51,7 @@ func Add(key string, tomlData interface{}) interface{} {
 		case internal.LocalTime:
 			return tag("time-local", orig.Format("15:04:05.999999999"))
 		}
-
+	
 	// Tag primitive values: bool, string, int, and float64.
 	case bool:
 		return tag("bool", fmt.Sprintf("%v", orig))

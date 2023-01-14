@@ -12,9 +12,9 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/BurntSushi/toml"
-	tomltest "github.com/BurntSushi/toml/internal/toml-test"
+	
+	"github.com/gozelle/toml"
+	tomltest "github.com/gozelle/toml/internal/toml-test"
 )
 
 func BenchmarkDecode(b *testing.B) {
@@ -30,7 +30,7 @@ func BenchmarkDecode(b *testing.B) {
 		}
 		return nil
 	})
-
+	
 	type test struct {
 		group string
 		toml  []string
@@ -40,7 +40,7 @@ func BenchmarkDecode(b *testing.B) {
 		tests = append(tests, test{group: k, toml: v})
 	}
 	sort.Slice(tests, func(i, j int) bool { return tests[i].group < tests[j].group })
-
+	
 	b.ResetTimer()
 	for _, tt := range tests {
 		b.Run(tt.group, func(b *testing.B) {
@@ -64,30 +64,30 @@ func BenchmarkEncode(b *testing.B) {
 			if g == "." {
 				g = "top"
 			}
-
+			
 			// "next" version of TOML.
 			if path == "valid/string/escape-esc.toml" {
 				return nil
 			}
-
+			
 			var dec map[string]interface{}
 			_, err := toml.Decode(string(d), &dec)
 			if err != nil {
 				b.Fatalf("decode %q: %s", path, err)
 			}
-
+			
 			buf := new(bytes.Buffer)
 			err = toml.NewEncoder(buf).Encode(dec)
 			if err != nil {
 				b.Logf("encode failed for %q (skipping): %s", path, err)
 				return nil
 			}
-
+			
 			files[g] = append(files[g], dec)
 		}
 		return nil
 	})
-
+	
 	type test struct {
 		group string
 		data  []map[string]interface{}
@@ -97,7 +97,7 @@ func BenchmarkEncode(b *testing.B) {
 		tests = append(tests, test{group: k, data: v})
 	}
 	sort.Slice(tests, func(i, j int) bool { return tests[i].group < tests[j].group })
-
+	
 	b.ResetTimer()
 	for _, tt := range tests {
 		b.Run(tt.group, func(b *testing.B) {
@@ -119,19 +119,19 @@ func BenchmarkExample(b *testing.B) {
 		b.Fatal(err)
 	}
 	t := string(d)
-
+	
 	var decoded example
 	_, err = toml.Decode(t, &decoded)
 	if err != nil {
 		b.Fatal(err)
 	}
-
+	
 	buf := new(bytes.Buffer)
 	err = toml.NewEncoder(buf).Encode(decoded)
 	if err != nil {
 		b.Fatal(err)
 	}
-
+	
 	b.ResetTimer()
 	b.Run("decode", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
@@ -139,7 +139,7 @@ func BenchmarkExample(b *testing.B) {
 			toml.Decode(t, &c)
 		}
 	})
-
+	
 	b.Run("encode", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
 			buf.Reset()
@@ -162,18 +162,18 @@ type (
 			Rank string
 		}
 	}
-
+	
 	server struct {
 		IP       string
 		Hostname string
 		Enabled  bool
 	}
-
+	
 	distro struct {
 		Name     string
 		Packages string
 	}
-
+	
 	duration struct{ time.Duration }
 	fmtTime  struct{ time.Time }
 )

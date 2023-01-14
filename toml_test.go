@@ -12,10 +12,10 @@ import (
 	"regexp"
 	"strings"
 	"testing"
-
-	"github.com/BurntSushi/toml"
-	"github.com/BurntSushi/toml/internal/tag"
-	tomltest "github.com/BurntSushi/toml/internal/toml-test"
+	
+	"github.com/gozelle/toml"
+	"github.com/gozelle/toml/internal/tag"
+	tomltest "github.com/gozelle/toml/internal/toml-test"
 )
 
 // Test if the error message matches what we want for invalid tests. Every slice
@@ -103,7 +103,7 @@ var metaTests = map[string]string{
 	`,
 	"key/special-chars": "\n" +
 		"\"=~!@$^&*()_+-`1234567890[]|/?><.,;:'=\": Integer\n",
-
+	
 	// TODO: "(albums): Hash" is missing; the problem is that this is an
 	// "implied key", which is recorded in the parser in implicits, rather than
 	// in keys. This is to allow "redefining" tables, for example:
@@ -128,7 +128,7 @@ var metaTests = map[string]string{
 		albums.songs:       ArrayHash
 		albums.songs.name:  String
 	`,
-
+	
 	// TODO: people and people.* listed many times; not entirely sure if that's
 	// what we want?
 	//
@@ -246,7 +246,7 @@ func TestToml(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-
+	
 	// TODO: bit of a hack to make sure not all test run; without this "-run=.."
 	// will still run alll tests, but just report the errors for the -run value.
 	// This is annoying in cases where you have some debug printf.
@@ -262,7 +262,7 @@ func TestToml(t *testing.T) {
 			break
 		}
 	}
-
+	
 	// Make sure the keys in metaTests and errorTests actually exist; easy to
 	// make a typo and nothing will get tested.
 	var (
@@ -277,7 +277,7 @@ func TestToml(t *testing.T) {
 			shouldExistInvalid["invalid/"+k] = struct{}{}
 		}
 	}
-
+	
 	run := func(t *testing.T, enc bool) {
 		r := tomltest.Runner{
 			Files:    tomltest.EmbeddedTests(),
@@ -289,12 +289,12 @@ func TestToml(t *testing.T) {
 				// specification says that times *must* start with a leading
 				// zero, but this requires writing out own datetime parser.
 				// I think it's actually okay to just accept both really.
-				// https://github.com/BurntSushi/toml/issues/320
+				// https://github.com/gozelle/toml/issues/320
 				"invalid/datetime/time-no-leads",
-
+				
 				// This test is fine, just doesn't deal well with empty output.
 				"valid/comment/noeol",
-
+				
 				// TODO: fix this.
 				"invalid/table/append-with-dotted*",
 				"invalid/inline-table/add",
@@ -302,12 +302,12 @@ func TestToml(t *testing.T) {
 				"invalid/table/duplicate-key-dotted-table2",
 			},
 		}
-
+		
 		tests, err := r.Run()
 		if err != nil {
 			t.Fatal(err)
 		}
-
+		
 		for _, test := range tests.Tests {
 			t.Run(test.Path, func(t *testing.T) {
 				if test.Failed() {
@@ -315,7 +315,7 @@ func TestToml(t *testing.T) {
 						test.Failure, test.Input, test.Output, test.Want)
 					return
 				}
-
+				
 				// Test error message.
 				if test.Type() == tomltest.TypeInvalid {
 					testError(t, test, shouldExistInvalid)
@@ -329,10 +329,10 @@ func TestToml(t *testing.T) {
 		}
 		t.Logf("passed: %d; failed: %d; skipped: %d", tests.Passed, tests.Failed, tests.Skipped)
 	}
-
+	
 	t.Run("decode", func(t *testing.T) { run(t, false) })
 	t.Run("encode", func(t *testing.T) { run(t, true) })
-
+	
 	if len(shouldExistValid) > 0 {
 		var s []string
 		for k := range shouldExistValid {
@@ -361,7 +361,7 @@ func testMeta(t *testing.T, test tomltest.Test) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
+	
 	b := new(strings.Builder)
 	for i, k := range meta.Keys() {
 		if i > 0 {
@@ -370,7 +370,7 @@ func testMeta(t *testing.T, test tomltest.Test) {
 		fmt.Fprintf(b, "%s: %s", k, meta.Type(k...))
 	}
 	have := b.String()
-
+	
 	want = reCollapseSpace.ReplaceAllString(strings.ReplaceAll(strings.TrimSpace(want), "\t", ""), " ")
 	if have != want {
 		t.Errorf("MetaData wrong\nhave:\n%s\nwant:\n%s", have, want)
@@ -379,7 +379,7 @@ func testMeta(t *testing.T, test tomltest.Test) {
 
 func testError(t *testing.T, test tomltest.Test, shouldExist map[string]struct{}) {
 	path := strings.TrimPrefix(test.Path, "invalid/")
-
+	
 	errs, ok := errorTests[path]
 	if ok {
 		delete(shouldExist, "invalid/"+path)
@@ -397,7 +397,7 @@ func testError(t *testing.T, test tomltest.Test, shouldExist map[string]struct{}
 	if !ok {
 		return
 	}
-
+	
 	for _, e := range errs {
 		if !strings.Contains(test.Output, e) {
 			t.Errorf("\nwrong error message\nhave: %s\nwant: %s", test.Output, e)
@@ -418,24 +418,24 @@ func (p parser) Encode(input string) (output string, outputIsError bool, retErr 
 			}
 		}
 	}()
-
+	
 	var tmp interface{}
 	err := json.Unmarshal([]byte(input), &tmp)
 	if err != nil {
 		return "", false, err
 	}
-
+	
 	rm, err := tag.Remove(tmp)
 	if err != nil {
 		return err.Error(), true, retErr
 	}
-
+	
 	buf := new(bytes.Buffer)
 	err = toml.NewEncoder(buf).Encode(rm)
 	if err != nil {
 		return err.Error(), true, retErr
 	}
-
+	
 	return buf.String(), false, retErr
 }
 
@@ -450,12 +450,12 @@ func (p parser) Decode(input string) (output string, outputIsError bool, retErr 
 			}
 		}
 	}()
-
+	
 	var d interface{}
 	if _, err := toml.Decode(input, &d); err != nil {
 		return err.Error(), true, retErr
 	}
-
+	
 	j, err := json.MarshalIndent(tag.Add("", d), "", "  ")
 	if err != nil {
 		return "", false, err

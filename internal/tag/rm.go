@@ -4,15 +4,15 @@ import (
 	"fmt"
 	"strconv"
 	"time"
-
-	"github.com/BurntSushi/toml/internal"
+	
+	"github.com/gozelle/toml/internal"
 )
 
 // Remove JSON tags to a data structure as returned by toml-test.
 func Remove(typedJson interface{}) (interface{}, error) {
 	// Switch on the data type.
 	switch v := typedJson.(type) {
-
+	
 	// Object: this can either be a TOML table or a primitive with tags.
 	case map[string]interface{}:
 		// This value represents a primitive: remove the tags and return just
@@ -24,7 +24,7 @@ func Remove(typedJson interface{}) (interface{}, error) {
 			}
 			return ut, nil
 		}
-
+		
 		// Table: remove tags on all children.
 		m := make(map[string]interface{}, len(v))
 		for k, v2 := range v {
@@ -35,7 +35,7 @@ func Remove(typedJson interface{}) (interface{}, error) {
 			}
 		}
 		return m, nil
-
+	
 	// Array: remove tags from all items.
 	case []interface{}:
 		a := make([]interface{}, len(v))
@@ -48,7 +48,7 @@ func Remove(typedJson interface{}) (interface{}, error) {
 		}
 		return a, nil
 	}
-
+	
 	// The top level must be an object or array.
 	return nil, fmt.Errorf("tag.Remove: unrecognized JSON format '%T'", typedJson)
 }
@@ -95,7 +95,7 @@ func untag(typed map[string]interface{}) (interface{}, error) {
 		}
 		return nil, fmt.Errorf("untag: could not parse %q as a boolean", v)
 	}
-
+	
 	return nil, fmt.Errorf("untag: unrecognized tag type %q", t)
 }
 

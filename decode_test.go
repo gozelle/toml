@@ -13,8 +13,8 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/BurntSushi/toml/internal"
+	
+	"github.com/gozelle/toml/internal"
 )
 
 func TestDecodeReader(t *testing.T) {
@@ -42,13 +42,13 @@ func TestDecodeFile(t *testing.T) {
 	if err := tmp.Close(); err != nil {
 		t.Fatal(err)
 	}
-
+	
 	var i struct{ A int }
 	meta, err := DecodeFile(tmp.Name(), &i)
 	if err != nil {
 		t.Fatal(err)
 	}
-
+	
 	have := fmt.Sprintf("%v %v %v", i, meta.Keys(), meta.Type("a"))
 	want := "{42} [a] Integer"
 	if have != want {
@@ -78,7 +78,7 @@ func TestDecodeEmbedded(t *testing.T) {
 	type Dog struct{ Name string }
 	type Age int
 	type cat struct{ Name string }
-
+	
 	for _, test := range []struct {
 		label       string
 		input       string
@@ -196,7 +196,7 @@ func TestDecodeErrors(t *testing.T) {
 			`toml: line 1 (last key "V.N"): expected array length 1; got TOML array of length 3`,
 		},
 	}
-
+	
 	for _, tt := range tests {
 		_, err := Decode(tt.toml, tt.s)
 		if err == nil {
@@ -244,20 +244,20 @@ name = "Born in the USA"
   [[albums.songs]]
   name = "Dancing in the Dark"
 `
-
+	
 	type Song struct {
 		Name string
 	}
-
+	
 	type Album struct {
 		Name  string
 		Songs []Song
 	}
-
+	
 	type Music struct {
 		Albums []Album
 	}
-
+	
 	expected := Music{[]Album{
 		{"Born to Run", []Song{{"Jungleland"}, {"Meeting Across the River"}}},
 		{"Born in the USA", []Song{{"Glory Days"}, {"Dancing in the Dark"}}},
@@ -276,7 +276,7 @@ func TestDecodePointers(t *testing.T) {
 		Type        string
 		Description string
 	}
-
+	
 	type Dict struct {
 		NamedObject map[string]*Object
 		BaseObject  *Object
@@ -293,7 +293,7 @@ func TestDecodePointers(t *testing.T) {
 		},
 		BaseObject: &Object{"BASE", "da base"},
 	}
-
+	
 	ex1 := `
 Strptr = "blah"
 Strptrs = ["abc", "def"]
@@ -365,7 +365,7 @@ func TestDecodeFloatOverflow(t *testing.T) {
 		{fmt.Sprintf(`F32 = %d`, -maxSafeFloat32Int-1), true},
 		{fmt.Sprintf(`F64 = %d`, maxSafeFloat64Int+1), true},
 		{fmt.Sprintf(`F64 = %d`, -maxSafeFloat64Int-1), true},
-
+		
 		{fmt.Sprintf(`F32 = %f`, math.MaxFloat32), false},
 		{fmt.Sprintf(`F32 = %f`, -math.MaxFloat32), false},
 		{fmt.Sprintf(`F32 = %d`, maxSafeFloat32Int), false},
@@ -377,7 +377,7 @@ func TestDecodeFloatOverflow(t *testing.T) {
 		{fmt.Sprintf(`F64 = %d`, maxSafeFloat64Int), false},
 		{fmt.Sprintf(`F64 = %d`, -maxSafeFloat64Int), false},
 	}
-
+	
 	for _, tt := range tests {
 		t.Run("", func(t *testing.T) {
 			var tab struct {
@@ -385,7 +385,7 @@ func TestDecodeFloatOverflow(t *testing.T) {
 				F64 float64
 			}
 			_, err := Decode(tt.value, &tab)
-
+			
 			if tt.overflow && err == nil {
 				t.Fatal("expected error, but err is nil")
 			}
@@ -443,7 +443,7 @@ func TestDecodeTypes(t *testing.T) {
 		mystr   string
 		myiface interface{}
 	)
-
+	
 	for _, tt := range []struct {
 		v       interface{}
 		want    string
@@ -454,16 +454,16 @@ func TestDecodeTypes(t *testing.T) {
 		{new(NopUnmarshalTOML), "42", ""},
 		{new(map[interface{}]bool), "&map[F:true]", ""},
 		{new(map[myiface]bool), "&map[F:true]", ""},
-
+		
 		{3, "", `toml: cannot decode to non-pointer "int"`},
 		{map[string]interface{}{}, "", `toml: cannot decode to non-pointer "map[string]interface {}"`},
-
+		
 		{(*int)(nil), "", `toml: cannot decode to nil value of "*int"`},
 		{(*Unmarshaler)(nil), "", `toml: cannot decode to nil value of "*toml.Unmarshaler"`},
 		{nil, "", `toml: cannot decode to non-pointer <nil>`},
-
+		
 		{new(map[int]string), "", "toml: cannot decode to a map with non-string key type"},
-
+		
 		{new(struct{ F int }), "", `toml: line 1 (last key "F"): incompatible types: TOML value has type bool; destination has type integer`},
 		{new(map[string]int), "", `toml: line 1 (last key "F"): incompatible types: TOML value has type bool; destination has type integer`},
 		{new(int), "", `toml: cannot decode to type int`},
@@ -474,7 +474,7 @@ func TestDecodeTypes(t *testing.T) {
 			if !errorContains(err, tt.wantErr) {
 				t.Fatalf("wrong error\nhave: %q\nwant: %q", err, tt.wantErr)
 			}
-
+			
 			if err == nil {
 				have := fmt.Sprintf("%v", tt.v)
 				if n, ok := tt.v.(*NopUnmarshalTOML); ok {
@@ -523,26 +523,26 @@ name = "Rice"
 	if _, err := Decode(tomlBlob, m); err != nil {
 		t.Fatal(err)
 	}
-
+	
 	if len(m.Dishes) != 2 {
 		t.Log("two dishes should be loaded with UnmarshalTOML()")
 		t.Errorf("expected %d but got %d", 2, len(m.Dishes))
 	}
-
+	
 	eggSalad := m.Dishes["eggsalad"]
 	if _, ok := interface{}(eggSalad).(dish); !ok {
 		t.Errorf("expected a dish")
 	}
-
+	
 	if eggSalad.Name != "Egg Salad with rice" {
 		t.Errorf("expected the dish to be named 'Egg Salad with rice'")
 	}
-
+	
 	if len(eggSalad.Ingredients) != 3 {
 		t.Log("dish should be loaded with UnmarshalTOML()")
 		t.Errorf("expected %d but got %d", 3, len(eggSalad.Ingredients))
 	}
-
+	
 	found := false
 	for _, i := range eggSalad.Ingredients {
 		if i.Name == "Rice" {
@@ -553,13 +553,13 @@ name = "Rice"
 	if !found {
 		t.Error("Rice was not loaded in UnmarshalTOML()")
 	}
-
+	
 	// test on a value - must be passed as *
 	o := menu{}
 	if _, err := Decode(tomlBlob, &o); err != nil {
 		t.Fatal(err)
 	}
-
+	
 }
 
 func TestDecodeInlineTable(t *testing.T) {
@@ -585,7 +585,7 @@ Locations = {NY = {Temp = "not cold", Rating = 4}, MI = {Temp = "freezing", Rati
 		Seasons   seasons
 	}
 	var got wrapper
-
+	
 	meta, err := Decode(input, &got)
 	if err != nil {
 		t.Fatal(err)
@@ -706,7 +706,7 @@ func TestDecodeSlices(t *testing.T) {
 	}{
 		{"",
 			T{}, T{}},
-
+		
 		// Leave existing values alone.
 		{"",
 			T{[]string{}, M{"arr": []string{}}},
@@ -714,7 +714,7 @@ func TestDecodeSlices(t *testing.T) {
 		{"",
 			T{[]string{"a"}, M{"arr": []string{"b"}}},
 			T{[]string{"a"}, M{"arr": []string{"b"}}}},
-
+		
 		// Empty array always allocates (see #339)
 		{`arr = []
 		tbl = {arr = []}`,
@@ -724,11 +724,11 @@ func TestDecodeSlices(t *testing.T) {
 		tbl = {}`,
 			T{[]string{}, M{}},
 			T{[]string{}, M{}}},
-
+		
 		{`arr = []`,
 			T{[]string{"a"}, M{}},
 			T{[]string{}, M{}}},
-
+		
 		{`arr = ["x"]
 		 tbl = {arr=["y"]}`,
 			T{},
@@ -742,7 +742,7 @@ func TestDecodeSlices(t *testing.T) {
 			T{[]string{"a", "b"}, M{"arr": []interface{}{"c", "d"}}},
 			T{[]string{"x"}, M{"arr": []interface{}{"y"}}}},
 	}
-
+	
 	for _, tt := range tests {
 		t.Run("", func(t *testing.T) {
 			_, err := Decode(tt.input, &tt.in)
@@ -778,11 +778,11 @@ func TestDecodePrimitive(t *testing.T) {
 		{slicep(nil), "P = [1,2]", slicep([]int{1, 2})},
 		{slicep([]int{}), "P = [1,2]", slicep([]int{1, 2})},
 		{slicep([]int{1, 2, 3}), "P = [1,2]", slicep([]int{1, 2})},
-
+		
 		// arrays
 		{arrayp([2]int{2, 3}), "", arrayp([2]int{2, 3})},
 		{arrayp([2]int{2, 3}), "P = [3,4]", arrayp([2]int{3, 4})},
-
+		
 		// maps
 		{mapp(nil), "", mapp(nil)},
 		{mapp(map[string]int{}), "", mapp(map[string]int{})},
@@ -790,7 +790,7 @@ func TestDecodePrimitive(t *testing.T) {
 		{mapp(nil), "[P]\na = 2", mapp(map[string]int{"a": 2})},
 		{mapp(map[string]int{}), "[P]\na = 2", mapp(map[string]int{"a": 2})},
 		{mapp(map[string]int{"a": 1, "b": 3}), "[P]\na = 2", mapp(map[string]int{"a": 2, "b": 3})},
-
+		
 		// structs
 		{&T{nil}, "[P]", &T{nil}},
 		{&T{[]int{}}, "[P]", &T{[]int{}}},
@@ -818,7 +818,7 @@ func TestDecodePrimitive(t *testing.T) {
 func TestDecodeDatetime(t *testing.T) {
 	// Test here in addition to toml-test to ensure the TZs are correct.
 	tz7 := time.FixedZone("", -3600*7)
-
+	
 	for _, tt := range []struct {
 		in   string
 		want time.Time
@@ -831,10 +831,10 @@ func TestDecodeDatetime(t *testing.T) {
 		{"1979-05-27T00:32:00.24-07:00", time.Date(1979, 05, 27, 00, 32, 0, 240000000, tz7)},
 		{"1979-05-27 07:32:00Z", time.Date(1979, 05, 27, 07, 32, 0, 0, time.UTC)},
 		{"1979-05-27t07:32:00z", time.Date(1979, 05, 27, 07, 32, 0, 0, time.UTC)},
-
+		
 		// Make sure the space between the datetime and "#" isn't lexed.
 		{"1979-05-27T07:32:12-07:00  # c", time.Date(1979, 05, 27, 07, 32, 12, 0, tz7)},
-
+		
 		// Local times.
 		{"1979-05-27T07:32:00", time.Date(1979, 05, 27, 07, 32, 0, 0, internal.LocalDatetime)},
 		{"1979-05-27T07:32:00.999999", time.Date(1979, 05, 27, 07, 32, 0, 999999000, internal.LocalDatetime)},
@@ -849,7 +849,7 @@ func TestDecodeDatetime(t *testing.T) {
 			if _, err := Decode(input, &x); err != nil {
 				t.Fatalf("got error: %s", err)
 			}
-
+			
 			if h, w := x.D.Format(time.RFC3339Nano), tt.want.Format(time.RFC3339Nano); h != w {
 				t.Errorf("\nhave: %s\nwant: %s", h, w)
 			}
@@ -889,14 +889,14 @@ func TestDecodeTextUnmarshaler(t *testing.T) {
 			"map[Times:map[one:1989-07-05 05:45:00 +0000 UTC two:1990-07-05 05:45:00 +0000 UTC]]",
 		},
 	}
-
+	
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := Decode(tt.toml, &tt.t)
 			if err != nil {
 				t.Fatal(err)
 			}
-
+			
 			have := fmt.Sprintf("%v", tt.t)
 			if have != tt.want {
 				t.Errorf("\nhave: %s\nwant: %s", have, tt.want)
@@ -916,41 +916,41 @@ func TestDecodeDuration(t *testing.T) {
 			"&{5m4s}", ""},
 		{&struct{ T time.Duration }{}, `t = "4.000000002s"`,
 			"&{4.000000002s}", ""},
-
+		
 		{&struct{ T time.Duration }{}, `t = 0`,
 			"&{0s}", ""},
 		{&struct{ T time.Duration }{}, `t = 12345678`,
 			"&{12.345678ms}", ""},
-
+		
 		{&struct{ T *time.Duration }{}, `T = "5s"`,
 			"&{5s}", ""},
 		{&struct{ T *time.Duration }{}, `T = 5`,
 			"&{5ns}", ""},
-
+		
 		{&struct{ T map[string]time.Duration }{}, `T.dur = "5s"`,
 			"&{map[dur:5s]}", ""},
 		{&struct{ T map[string]*time.Duration }{}, `T.dur = "5s"`,
 			"&{map[dur:5s]}", ""},
-
+		
 		{&struct{ T []time.Duration }{}, `T = ["5s"]`,
 			"&{[5s]}", ""},
 		{&struct{ T []*time.Duration }{}, `T = ["5s"]`,
 			"&{[5s]}", ""},
-
+		
 		{&struct{ T time.Duration }{}, `t = "99 bottles of beer"`, "&{0s}", `invalid duration: "99 bottles of beer"`},
 		{&struct{ T time.Duration }{}, `t = "one bottle of beer"`, "&{0s}", `invalid duration: "one bottle of beer"`},
 		{&struct{ T time.Duration }{}, `t = 1.2`, "&{0s}", "incompatible types:"},
 		{&struct{ T time.Duration }{}, `t = {}`, "&{0s}", "incompatible types:"},
 		{&struct{ T time.Duration }{}, `t = []`, "&{0s}", "incompatible types:"},
 	}
-
+	
 	for _, tt := range tests {
 		t.Run("", func(t *testing.T) {
 			_, err := Decode(tt.toml, tt.in)
 			if !errorContains(err, tt.wantErr) {
 				t.Fatal(err)
 			}
-
+			
 			have := fmt.Sprintf("%s", tt.in)
 			if have != tt.want {
 				t.Errorf("\nhave: %s\nwant: %s", have, tt.want)
@@ -972,19 +972,19 @@ func TestDecodeJSONNumber(t *testing.T) {
 		{&struct{ D []*json.Number }{}, `D = [2, 3.03]`, "&{[2 3.03]}", ""},
 		{&struct{ D map[string]json.Number }{}, `D = {a=2, b=3.03}`, "&{map[a:2 b:3.03]}", ""},
 		{&struct{ D map[string]*json.Number }{}, `D = {a=2, b=3.03}`, "&{map[a:2 b:3.03]}", ""},
-
+		
 		{&struct{ D json.Number }{}, `D = {}`, "&{}", "incompatible types"},
 		{&struct{ D json.Number }{}, `D = []`, "&{}", "incompatible types"},
 		{&struct{ D json.Number }{}, `D = "2"`, "&{}", "incompatible types"},
 	}
-
+	
 	for _, tt := range tests {
 		t.Run("", func(t *testing.T) {
 			_, err := Decode(tt.toml, tt.in)
 			if !errorContains(err, tt.wantErr) {
 				t.Fatal(err)
 			}
-
+			
 			have := fmt.Sprintf("%s", tt.in)
 			if have != tt.want {
 				t.Errorf("\nhave: %s\nwant: %s", have, tt.want)
@@ -1003,7 +1003,7 @@ func TestMetaDotConflict(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
+	
 	want := `"a.b"=String; a.b=Integer; ""=Integer`
 	have := ""
 	for i, k := range meta.Keys() {
@@ -1099,13 +1099,13 @@ func TestCustomEncode(t *testing.T) {
 		Enum:  &enum,
 		Slice: &InnerArrayString{value: []string{"text1", "text2"}},
 	}
-
+	
 	var buf bytes.Buffer
 	err := NewEncoder(&buf).Encode(outer)
 	if err != nil {
 		t.Errorf("Encode failed: %s", err)
 	}
-
+	
 	have := strings.TrimSpace(buf.String())
 	want := strings.ReplaceAll(strings.TrimSpace(`
 		Int = 10
@@ -1128,7 +1128,7 @@ func TestCustomDecode(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Decode failed: %s", err)
 	}
-
+	
 	if outer.Int.value != 10 {
 		t.Errorf("\nhave:\n%v\nwant:\n%v\n", outer.Int.value, 10)
 	}

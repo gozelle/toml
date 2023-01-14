@@ -7,8 +7,8 @@ import (
 	"sort"
 	"strings"
 	"time"
-
-	"github.com/BurntSushi/toml"
+	
+	"github.com/gozelle/toml"
 )
 
 type (
@@ -26,18 +26,18 @@ type (
 			Rank string
 		}
 	}
-
+	
 	server struct {
 		IP       string
 		Hostname string
 		Enabled  bool
 	}
-
+	
 	distro struct {
 		Name     string
 		Packages string
 	}
-
+	
 	fmtTime struct{ time.Time }
 )
 
@@ -62,16 +62,16 @@ func main() {
 	if _, err := os.Stat(f); err != nil {
 		f = "_example/example.toml"
 	}
-
+	
 	var config example
 	meta, err := toml.DecodeFile(f, &config)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-
+	
 	indent := strings.Repeat(" ", 14)
-
+	
 	fmt.Print("Decoded")
 	typ, val := reflect.TypeOf(config), reflect.ValueOf(config)
 	for i := 0; i < typ.NumField(); i++ {
@@ -81,7 +81,7 @@ func main() {
 		}
 		fmt.Printf("%s%-11s → %v\n", indent, typ.Field(i).Name, val.Field(i).Interface())
 	}
-
+	
 	fmt.Print("\nKeys")
 	keys := meta.Keys()
 	sort.Slice(keys, func(i, j int) bool { return keys[i].String() < keys[j].String() })
@@ -92,7 +92,7 @@ func main() {
 		}
 		fmt.Printf("%s%-10s %s\n", indent, meta.Type(k...), k)
 	}
-
+	
 	fmt.Print("\nUndecoded")
 	keys = meta.Undecoded()
 	sort.Slice(keys, func(i, j int) bool { return keys[i].String() < keys[j].String() })

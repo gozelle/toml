@@ -8,9 +8,9 @@ import (
 	"log"
 	"os"
 	"path"
-
-	"github.com/BurntSushi/toml"
-	"github.com/BurntSushi/toml/internal/tag"
+	
+	"github.com/gozelle/toml"
+	"github.com/gozelle/toml/internal/tag"
 )
 
 func init() {
@@ -29,17 +29,17 @@ func main() {
 	if flag.NArg() != 0 {
 		flag.Usage()
 	}
-
+	
 	var tmp interface{}
 	if err := json.NewDecoder(os.Stdin).Decode(&tmp); err != nil {
 		log.Fatalf("Error decoding JSON: %s", err)
 	}
-
+	
 	rm, err := tag.Remove(tmp)
 	if err != nil {
 		log.Fatalf("Error decoding JSON: %s", err)
 	}
-
+	
 	if err := toml.NewEncoder(os.Stdout).Encode(rm); err != nil {
 		log.Fatalf("Error encoding TOML: %s", err)
 	}

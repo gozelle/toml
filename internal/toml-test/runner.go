@@ -16,8 +16,8 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
-
-	"github.com/BurntSushi/toml"
+	
+	"github.com/gozelle/toml"
 )
 
 type testType uint8
@@ -66,7 +66,7 @@ type Parser interface {
 	// occurred; failing to encode to TOML is not an error, but the encoder
 	// unexpectedly panicking is.
 	Encode(jsonInput string) (output string, outputIsError bool, err error)
-
+	
 	// Decode a TOML string to JSON. The same semantics as Encode apply.
 	Decode(tomlInput string) (output string, outputIsError bool, err error)
 }
@@ -80,18 +80,18 @@ type CommandParser struct {
 // Tests are tests to run.
 type Tests struct {
 	Tests []Test
-
+	
 	// Set when test are run.
-
+	
 	Skipped, Passed, Failed int
 }
 
 // Result is the result of a single test.
 type Test struct {
 	Path string // Path of test, e.g. "valid/string-test"
-
+	
 	// Set when a test is run.
-
+	
 	Skipped          bool   // Skipped this test?
 	Failure          string // Failure message.
 	Key              string // TOML key the failure occured on; may be blank.
@@ -116,7 +116,7 @@ func (r Runner) List() ([]string, error) {
 		return nil, fmt.Errorf("tomltest.Runner.Run: unknown version: %q (supported: \"%s\")",
 			r.Version, strings.Join(v, `", "`))
 	}
-
+	
 	var (
 		v       = versions[r.Version]
 		exclude = make([]string, 0, 8)
@@ -128,17 +128,17 @@ func (r Runner) List() ([]string, error) {
 		}
 		v = versions[v.inherit]
 	}
-
+	
 	ls := make([]string, 0, 256)
 	if err := r.findTOML("valid", &ls, exclude); err != nil {
 		return nil, fmt.Errorf("reading 'valid/' dir: %w", err)
 	}
-
+	
 	d := "invalid" + map[bool]string{true: "-encoder", false: ""}[r.Encoder]
 	if err := r.findTOML(d, &ls, exclude); err != nil {
 		return nil, fmt.Errorf("reading %q dir: %w", d, err)
 	}
-
+	
 	return ls, nil
 }
 
@@ -153,7 +153,7 @@ func (r Runner) Run() (Tests, error) {
 	if err != nil {
 		return Tests{}, fmt.Errorf("tomltest.Runner.Run: %w", err)
 	}
-
+	
 	tests := Tests{Tests: make([]Test, 0, len(r.RunTests)), Skipped: skipped}
 	for _, p := range r.RunTests {
 		if r.hasSkip(p) {
@@ -161,17 +161,17 @@ func (r Runner) Run() (Tests, error) {
 			tests.Tests = append(tests.Tests, Test{Path: p, Skipped: true, Encoder: r.Encoder})
 			continue
 		}
-
+		
 		t := Test{Path: p, Encoder: r.Encoder}.Run(r.Parser, r.Files)
 		tests.Tests = append(tests.Tests, t)
-
+		
 		if t.Failed() {
 			tests.Failed++
 		} else {
 			tests.Passed++
 		}
 	}
-
+	
 	return tests, nil
 }
 
@@ -181,7 +181,7 @@ func (r Runner) findTOML(path string, appendTo *[]string, exclude []string) erro
 	if _, err := fs.Stat(r.Files, path); errors.Is(err, fs.ErrNotExist) {
 		return nil
 	}
-
+	
 	return fs.WalkDir(r.Files, path, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -189,14 +189,14 @@ func (r Runner) findTOML(path string, appendTo *[]string, exclude []string) erro
 		if d.IsDir() || !strings.HasSuffix(path, ".toml") {
 			return nil
 		}
-
+		
 		path = strings.TrimSuffix(path, ".toml")
 		for _, e := range exclude {
 			if ok, _ := filepath.Match(e, path); ok {
 				return nil
 			}
 		}
-
+		
 		*appendTo = append(*appendTo, path)
 		return nil
 	})
@@ -208,9 +208,9 @@ func (r *Runner) findTests() (int, error) {
 	if err != nil {
 		return 0, err
 	}
-
+	
 	var skip int
-
+	
 	if len(r.RunTests) == 0 {
 		r.RunTests = ls
 	} else {
@@ -225,7 +225,7 @@ func (r *Runner) findTests() (int, error) {
 		}
 		r.RunTests, skip = run, len(ls)-len(run)
 	}
-
+	
 	// Expand invalid tests ending in ".multi.toml"
 	expanded := make([]string, 0, len(r.RunTests))
 	for _, path := range r.RunTests {
@@ -233,16 +233,16 @@ func (r *Runner) findTests() (int, error) {
 			expanded = append(expanded, path)
 			continue
 		}
-
+		
 		d, err := fs.ReadFile(r.Files, path+".toml")
 		if err != nil {
 			return 0, err
 		}
-
+		
 		fmt.Println(string(d))
 	}
 	r.RunTests = expanded
-
+	
 	return skip, nil
 }
 
@@ -260,7 +260,7 @@ func (c CommandParser) Encode(input string) (output string, outputIsError bool, 
 	cmd := exec.Command(c.cmd[0])
 	cmd.Args = c.cmd
 	cmd.Stdin, cmd.Stdout, cmd.Stderr = strings.NewReader(input), stdout, stderr
-
+	
 	err = cmd.Run()
 	if err != nil {
 		eErr := &exec.ExitError{}
@@ -269,7 +269,7 @@ func (c CommandParser) Encode(input string) (output string, outputIsError bool, 
 			err = nil
 		}
 	}
-
+	
 	if stderr.Len() > 0 {
 		return strings.TrimSpace(stderr.String()) + "\n", true, err
 	}
@@ -292,7 +292,7 @@ func (t Test) runInvalid(p Parser, fsys fs.FS) Test {
 	if err != nil {
 		return t.bug(err.Error())
 	}
-
+	
 	if t.Encoder {
 		t.Output, t.OutputFromStderr, err = p.Encode(t.Input)
 	} else {
@@ -313,7 +313,7 @@ func (t Test) runValid(p Parser, fsys fs.FS) Test {
 	if err != nil {
 		return t.bug(err.Error())
 	}
-
+	
 	if t.Encoder {
 		t.Output, t.OutputFromStderr, err = p.Encode(t.Input)
 	} else {
@@ -331,7 +331,7 @@ func (t Test) runValid(p Parser, fsys fs.FS) Test {
 			return t.fail("stdout is empty")
 		}
 	}
-
+	
 	// Compare for encoder test
 	if t.Encoder {
 		want, err := t.ReadWantTOML(fsys)
@@ -345,18 +345,18 @@ func (t Test) runValid(p Parser, fsys fs.FS) Test {
 		}
 		return t.CompareTOML(want, have)
 	}
-
+	
 	// Compare for decoder test
 	want, err := t.ReadWantJSON(fsys)
 	if err != nil {
 		return t.fail(err.Error())
 	}
-
+	
 	var have interface{}
 	if err := json.Unmarshal([]byte(t.Output), &have); err != nil {
 		return t.fail("decode JSON output from parser:\n  %s", err)
 	}
-
+	
 	return t.CompareJSON(want, have)
 }
 
@@ -374,7 +374,7 @@ func (t Test) ReadWant(fsys fs.FS) (path, data string, err error) {
 	if t.Type() == TypeInvalid {
 		panic("testoml.Test.ReadWant: invalid tests do not have a 'correct' version")
 	}
-
+	
 	path = t.Path + map[bool]string{true: ".toml", false: ".json"}[t.Encoder]
 	d, err := fs.ReadFile(fsys, path)
 	if err != nil {
@@ -389,7 +389,7 @@ func (t *Test) ReadWantJSON(fsys fs.FS) (v interface{}, err error) {
 	if err != nil {
 		return nil, err
 	}
-
+	
 	if err := json.Unmarshal([]byte(t.Want), &v); err != nil {
 		return nil, fmt.Errorf("decode JSON file %q:\n  %s", path, err)
 	}

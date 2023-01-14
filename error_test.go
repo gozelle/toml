@@ -11,9 +11,9 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/BurntSushi/toml"
-	tomltest "github.com/BurntSushi/toml/internal/toml-test"
+	
+	"github.com/gozelle/toml"
+	tomltest "github.com/gozelle/toml/internal/toml-test"
 )
 
 func TestErrorPosition(t *testing.T) {
@@ -28,7 +28,7 @@ At line 1, column 13:
 
       1 | wrong = [ 1 2 3 ]
                       ^`},
-
+		
 		{"array/no-close-2.toml", `
 toml: error: expected a comma (',') or array terminator (']'), but got end of file
 
@@ -36,7 +36,7 @@ At line 1, column 10:
 
       1 | x = [42 #
                    ^`},
-
+		
 		{"array/tables-2.toml", `
 toml: error: Key 'fruit.variety' has already been defined.
 
@@ -55,7 +55,7 @@ At line 2, column 4-15:
       2 | d = 2006-01-30T
               ^^^^^^^^^^^`},
 	}
-
+	
 	fsys := tomltest.EmbeddedTests()
 	for _, tt := range tests {
 		t.Run(tt.test, func(t *testing.T) {
@@ -63,21 +63,21 @@ At line 2, column 4-15:
 			if err != nil {
 				t.Fatal(err)
 			}
-
+			
 			var x interface{}
 			_, err = toml.Decode(string(input), &x)
 			if err == nil {
 				t.Fatal("err is nil")
 			}
-
+			
 			var pErr toml.ParseError
 			if !errors.As(err, &pErr) {
 				t.Errorf("err is not a ParseError: %T %[1]v", err)
 			}
-
+			
 			tt.err = tt.err[1:] + "\n" // Remove first newline, and add trailing.
 			want := pErr.ErrorWithUsage()
-
+			
 			if !strings.Contains(want, tt.err) {
 				t.Fatalf("\nwant:\n%s\nhave:\n%s", tt.err, want)
 			}
@@ -181,7 +181,7 @@ func TestParseError(t *testing.T) {
             |     int refers to int32 on 32-bit systems and int64 on 64-bit systems.
 			`,
 		},
-
+		
 		{
 			&struct{ D time.Duration }{},
 			`D = "99 bottles"`,
@@ -208,7 +208,7 @@ func TestParseError(t *testing.T) {
 			`,
 		},
 	}
-
+	
 	prep := func(s string) string {
 		lines := strings.Split(strings.TrimSpace(s), "\n")
 		for i := range lines {
@@ -219,22 +219,22 @@ func TestParseError(t *testing.T) {
 		}
 		return strings.Join(lines, "\n") + "\n"
 	}
-
+	
 	for _, tt := range tests {
 		t.Run("", func(t *testing.T) {
 			_, err := toml.Decode(tt.toml, tt.in)
 			if err == nil {
 				t.Fatalf("err is nil; decoded: %#v", tt.in)
 			}
-
+			
 			var pErr toml.ParseError
 			if !errors.As(err, &pErr) {
 				t.Fatalf("err is not a ParseError: %#v", err)
 			}
-
+			
 			tt.err = prep(tt.err)
 			have := pErr.ErrorWithUsage()
-
+			
 			// have = strings.ReplaceAll(have, " ", "·")
 			// tt.err = strings.ReplaceAll(tt.err, " ", "·")
 			if have != tt.err {

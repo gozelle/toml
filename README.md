@@ -3,19 +3,19 @@ reflection interface similar to Go's standard library `json` and `xml` packages.
 
 Compatible with TOML version [v1.0.0](https://toml.io/en/v1.0.0).
 
-Documentation: https://godocs.io/github.com/BurntSushi/toml
+Documentation: https://godocs.io/github.com/gozelle/toml
 
-See the [releases page](https://github.com/BurntSushi/toml/releases) for a
+See the [releases page](https://github.com/gozelle/toml/releases) for a
 changelog; this information is also in the git tag annotations (e.g. `git show
 v0.4.0`).
 
 This library requires Go 1.13 or newer; add it to your go.mod with:
 
-    % go get github.com/BurntSushi/toml@latest
+    % go get github.com/gozelle/toml@latest
 
 It also comes with a TOML validator CLI tool:
 
-    % go install github.com/BurntSushi/toml/cmd/tomlv@latest
+    % go install github.com/gozelle/toml/cmd/tomlv@latest
     % tomlv some-toml-file.toml
 
 ### Examples

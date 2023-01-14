@@ -13,8 +13,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/BurntSushi/toml/internal"
+	
+	"github.com/gozelle/toml/internal"
 )
 
 type tomlEncodeError struct{ error }
@@ -117,7 +117,7 @@ type Marshaler interface {
 type Encoder struct {
 	// String to use for a single indentation level; default is two spaces.
 	Indent string
-
+	
 	w          *bufio.Writer
 	hasWritten bool // written any output to w yet?
 }
@@ -168,7 +168,7 @@ func (enc *Encoder) encode(key Key, rv reflect.Value) {
 		enc.encode(key, reflect.ValueOf(rv.Interface().(Primitive).undecoded))
 		return
 	}
-
+	
 	k := rv.Kind()
 	switch k {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32,
@@ -250,7 +250,7 @@ func (enc *Encoder) eElement(rv reflect.Value) {
 		return
 	case json.Number:
 		n, _ := rv.Interface().(json.Number)
-
+		
 		if n == "" { /// Useful zero value.
 			enc.w.WriteByte('0')
 			return
@@ -263,7 +263,7 @@ func (enc *Encoder) eElement(rv reflect.Value) {
 		}
 		encPanic(fmt.Errorf("unable to convert %q to int64 or float64", n))
 	}
-
+	
 	switch rv.Kind() {
 	case reflect.Ptr:
 		enc.eElement(rv.Elem())
@@ -379,7 +379,7 @@ func (enc *Encoder) eMap(key Key, rv reflect.Value, inline bool) {
 	if rt.Key().Kind() != reflect.String {
 		encPanic(errNonString)
 	}
-
+	
 	// Sort keys so that we have deterministic output. And write keys directly
 	// underneath this key first, before writing sub-structs or sub-maps.
 	var mapKeysDirect, mapKeysSub []string
@@ -391,7 +391,7 @@ func (enc *Encoder) eMap(key Key, rv reflect.Value, inline bool) {
 			mapKeysDirect = append(mapKeysDirect, k)
 		}
 	}
-
+	
 	var writeMapKeys = func(mapKeys []string, trailC bool) {
 		sort.Strings(mapKeys)
 		for i, mapKey := range mapKeys {
@@ -399,7 +399,7 @@ func (enc *Encoder) eMap(key Key, rv reflect.Value, inline bool) {
 			if isNil(val) {
 				continue
 			}
-
+			
 			if inline {
 				enc.writeKeyValue(Key{mapKey}, val, true)
 				if trailC || i != len(mapKeys)-1 {
@@ -410,7 +410,7 @@ func (enc *Encoder) eMap(key Key, rv reflect.Value, inline bool) {
 			}
 		}
 	}
-
+	
 	if inline {
 		enc.wf("{")
 	}
@@ -454,9 +454,9 @@ func (enc *Encoder) eStruct(key Key, rv reflect.Value, inline bool) {
 			if opts.skip {
 				continue
 			}
-
+			
 			frv := eindirect(rv.Field(i))
-
+			
 			if is32Bit {
 				// Copy so it works correct on 32bit archs; not clear why this
 				// is needed. See #314, and https://www.reddit.com/r/golang/comments/pnx8v4
@@ -466,7 +466,7 @@ func (enc *Encoder) eStruct(key Key, rv reflect.Value, inline bool) {
 				copy(copyStart, start)
 				start = copyStart
 			}
-
+			
 			// Treat anonymous struct fields with tag names as though they are
 			// not anonymous, like encoding/json does.
 			//
@@ -477,7 +477,7 @@ func (enc *Encoder) eStruct(key Key, rv reflect.Value, inline bool) {
 					continue
 				}
 			}
-
+			
 			if typeIsTable(tomlTypeOfGo(frv)) {
 				fieldsSub = append(fieldsSub, append(start, f.Index...))
 			} else {
@@ -486,16 +486,16 @@ func (enc *Encoder) eStruct(key Key, rv reflect.Value, inline bool) {
 		}
 	}
 	addFields(rt, rv, nil)
-
+	
 	writeFields := func(fields [][]int) {
 		for _, fieldIndex := range fields {
 			fieldType := rt.FieldByIndex(fieldIndex)
 			fieldVal := eindirect(rv.FieldByIndex(fieldIndex))
-
+			
 			if isNil(fieldVal) { /// Don't write anything for nil fields.
 				continue
 			}
-
+			
 			opts := getOptions(fieldType.Tag)
 			if opts.skip {
 				continue
@@ -504,14 +504,14 @@ func (enc *Encoder) eStruct(key Key, rv reflect.Value, inline bool) {
 			if opts.name != "" {
 				keyName = opts.name
 			}
-
+			
 			if opts.omitempty && enc.isEmpty(fieldVal) {
 				continue
 			}
 			if opts.omitzero && isZero(fieldVal) {
 				continue
 			}
-
+			
 			if inline {
 				enc.writeKeyValue(Key{keyName}, fieldVal, true)
 				if fieldIndex[0] != len(fields)-1 {
@@ -522,7 +522,7 @@ func (enc *Encoder) eStruct(key Key, rv reflect.Value, inline bool) {
 			}
 		}
 	}
-
+	
 	if inline {
 		enc.wf("{")
 	}
@@ -544,7 +544,7 @@ func tomlTypeOfGo(rv reflect.Value) tomlType {
 	if isNil(rv) || !rv.IsValid() {
 		return nil
 	}
-
+	
 	if rv.Kind() == reflect.Struct {
 		if rv.Type() == timeType {
 			return tomlDatetime
@@ -554,11 +554,11 @@ func tomlTypeOfGo(rv reflect.Value) tomlType {
 		}
 		return tomlHash
 	}
-
+	
 	if isMarshaler(rv) {
 		return tomlString
 	}
-
+	
 	switch rv.Kind() {
 	case reflect.Bool:
 		return tomlBool
@@ -595,7 +595,7 @@ func isTableArray(arr reflect.Value) bool {
 	if isNil(arr) || !arr.IsValid() || arr.Len() == 0 {
 		return false
 	}
-
+	
 	ret := true
 	for i := 0; i < arr.Len(); i++ {
 		tt := tomlTypeOfGo(eindirect(arr.Index(i)))
@@ -603,7 +603,7 @@ func isTableArray(arr reflect.Value) bool {
 		if tt == nil {
 			encPanic(errArrayNilElement)
 		}
-
+		
 		if ret && !typeEqual(tomlHash, tt) {
 			ret = false
 		}
@@ -732,11 +732,11 @@ func eindirect(v reflect.Value) reflect.Value {
 		}
 		return v
 	}
-
+	
 	if v.IsNil() {
 		return v
 	}
-
+	
 	return eindirect(v.Elem())
 }
 

@@ -22,7 +22,7 @@ func TestEncodeRoundTrip(t *testing.T) {
 		DOB        time.Time
 		Ipaddress  net.IP
 	}
-
+	
 	var inputs = Config{
 		Age:        13,
 		Cats:       []string{"one", "two", "three"},
@@ -31,7 +31,7 @@ func TestEncodeRoundTrip(t *testing.T) {
 		DOB:        time.Now(),
 		Ipaddress:  net.ParseIP("192.168.59.254"),
 	}
-
+	
 	var (
 		firstBuffer  bytes.Buffer
 		secondBuffer bytes.Buffer
@@ -107,7 +107,7 @@ func TestEncodeArrayHashWithNormalHashOrder(t *testing.T) {
 		A Alpha
 		B []Beta
 	}
-
+	
 	val := Conf{
 		V: 1,
 		A: Alpha{2},
@@ -128,7 +128,7 @@ func TestEncodeOmitEmptyStruct(t *testing.T) {
 			Time time.Time
 		}
 	)
-
+	
 	tests := []struct {
 		in   interface{}
 		want string
@@ -139,19 +139,19 @@ func TestEncodeOmitEmptyStruct(t *testing.T) {
 		{struct {
 			F T `toml:"f,omitempty"`
 		}{T{1}}, "[f]\n  Int = 1"},
-
+		
 		{struct {
 			F Tpriv `toml:"f,omitempty"`
 		}{}, ""},
 		{struct {
 			F Tpriv `toml:"f,omitempty"`
 		}{Tpriv{1, 0}}, "[f]\n  Int = 1"},
-
+		
 		// Private field being set also counts as "not empty".
 		{struct {
 			F Tpriv `toml:"f,omitempty"`
 		}{Tpriv{0, 1}}, "[f]\n  Int = 0"},
-
+		
 		// time.Time is common use case, so test that explicitly.
 		{struct {
 			F Ttime `toml:"t,omitempty"`
@@ -159,20 +159,20 @@ func TestEncodeOmitEmptyStruct(t *testing.T) {
 		{struct {
 			F Ttime `toml:"t,omitempty"`
 		}{Ttime{time.Time{}.Add(1)}}, "[t]\n  Time = 0001-01-01T00:00:00.000000001Z"},
-
+		
 		// TODO: also test with MarshalText, MarshalTOML returning non-zero
 		// value.
 	}
-
+	
 	for _, tt := range tests {
 		t.Run("", func(t *testing.T) {
 			buf := new(bytes.Buffer)
-
+			
 			err := NewEncoder(buf).Encode(tt.in)
 			if err != nil {
 				t.Fatal(err)
 			}
-
+			
 			have := strings.TrimSpace(buf.String())
 			if have != tt.want {
 				t.Errorf("\nhave:\n%s\nwant:\n%s", have, tt.want)
@@ -206,7 +206,7 @@ func TestEncodeOmitEmpty(t *testing.T) {
 		NestedUncomparable1 nestedUncomparable `toml:"nesteduncomparable1,omitempty"`
 		NestedUncomparable2 nestedUncomparable `toml:"nesteduncomparable2,omitempty"`
 	}
-
+	
 	var v simple
 	encodeExpected(t, "fields with omitempty are omitted when empty", v, "", nil)
 	v = simple{
@@ -249,7 +249,7 @@ func TestEncodeOmitEmptyPointer(t *testing.T) {
 	type s struct {
 		String *string `toml:"string,omitempty"`
 	}
-
+	
 	t.Run("nil pointers", func(t *testing.T) {
 		var v struct {
 			String *string            `toml:"string,omitempty"`
@@ -259,14 +259,14 @@ func TestEncodeOmitEmptyPointer(t *testing.T) {
 		}
 		encodeExpected(t, "", v, ``, nil)
 	})
-
+	
 	t.Run("zero values", func(t *testing.T) {
-		// TODO: this needs to be fixed; https://github.com/BurntSushi/toml/issues/371
+		// TODO: this needs to be fixed; https://github.com/gozelle/toml/issues/371
 		t.Skip()
 		str := ""
 		sl := []string{}
 		m := map[string]string{}
-
+		
 		v := struct {
 			String *string            `toml:"string,omitempty"`
 			Slice  *[]string          `toml:"slice,omitempty"`
@@ -284,12 +284,12 @@ slice = []
 `
 		encodeExpected(t, "", v, want, nil)
 	})
-
+	
 	t.Run("with values", func(t *testing.T) {
 		str := "XXX"
 		sl := []string{"XXX"}
 		m := map[string]string{"XXX": "XXX"}
-
+		
 		v := struct {
 			String *string            `toml:"string,omitempty"`
 			Slice  *[]string          `toml:"slice,omitempty"`
@@ -315,12 +315,12 @@ func TestEncodeOmitZero(t *testing.T) {
 		Real     float64 `toml:"real,omitzero"`
 		Unsigned uint    `toml:"unsigned,omitzero"`
 	}
-
+	
 	value := simple{0, 0.0, uint(0)}
 	expected := ""
-
+	
 	encodeExpected(t, "simple with omitzero, all zero", value, expected, nil)
-
+	
 	value.Number = 10
 	value.Real = 20
 	value.Unsigned = 5
@@ -359,15 +359,15 @@ func TestEncodeAnonymousStruct(t *testing.T) {
 	type Outer3 struct {
 		Embedded
 	}
-
+	
 	v0 := Outer0{Inner{3}, inner{4}}
 	expected := "N = 3\nB = 4\n"
 	encodeExpected(t, "embedded anonymous untagged struct", v0, expected, nil)
-
+	
 	v1 := Outer1{Inner{3}, inner{4}}
 	expected = "[inner]\n  N = 3\n\n[innerb]\n  B = 4\n"
 	encodeExpected(t, "embedded anonymous tagged struct", v1, expected, nil)
-
+	
 	v3 := Outer3{Embedded: Embedded{Inner{3}, Inner{4}}}
 	expected = "[Inner1]\n  N = 3\n\n[Inner2]\n  N = 4\n"
 	encodeExpected(t, "embedded anonymous multiple fields", v3, expected, nil)
@@ -379,19 +379,19 @@ func TestEncodeAnonymousStructPointerField(t *testing.T) {
 	type Outer1 struct {
 		*Inner `toml:"inner"`
 	}
-
+	
 	v0 := Outer0{}
 	expected := ""
 	encodeExpected(t, "nil anonymous untagged struct pointer field", v0, expected, nil)
-
+	
 	v0 = Outer0{&Inner{3}}
 	expected = "N = 3\n"
 	encodeExpected(t, "non-nil anonymous untagged struct pointer field", v0, expected, nil)
-
+	
 	v1 := Outer1{}
 	expected = ""
 	encodeExpected(t, "nil anonymous tagged struct pointer field", v1, expected, nil)
-
+	
 	v1 = Outer1{&Inner{3}}
 	expected = "[inner]\n  N = 3\n"
 	encodeExpected(t, "non-nil anonymous tagged struct pointer field", v1, expected, nil)
@@ -409,7 +409,7 @@ func TestEncodeNestedAnonymousStructs(t *testing.T) {
 		A
 		BC
 	}
-
+	
 	v := &Outer{
 		A: A{
 			A: "a",
@@ -423,7 +423,7 @@ func TestEncodeNestedAnonymousStructs(t *testing.T) {
 			},
 		},
 	}
-
+	
 	expected := "A = \"a\"\nB = \"b\"\nC = \"c\"\n"
 	encodeExpected(t, "nested anonymous untagged structs", v, expected, nil)
 }
@@ -444,7 +444,7 @@ func TestEncodeAnonymousNoStructField(t *testing.T) {
 		IntS
 		intS
 	}
-
+	
 	v0 := Outer0{
 		Inner: InnerForNextTest{3},
 		inner: InnerForNextTest{4},
@@ -483,14 +483,14 @@ func TestEncodePrimitive(t *testing.T) {
 		DataA int
 		DataB string
 	}
-
+	
 	decodeAndEncode := func(toml string) string {
 		var s MyStruct
 		_, err := Decode(toml, &s)
 		if err != nil {
 			t.Fatal(err)
 		}
-
+		
 		var buf bytes.Buffer
 		err = NewEncoder(&buf).Encode(s)
 		if err != nil {
@@ -498,13 +498,13 @@ func TestEncodePrimitive(t *testing.T) {
 		}
 		return buf.String()
 	}
-
+	
 	original := `DataA = 1
 DataB = "bbb"
 Data = ["Foo", "Bar"]
 `
 	reEncoded := decodeAndEncode(decodeAndEncode(original))
-
+	
 	if reEncoded != original {
 		t.Errorf(
 			"re-encoded not the same as original\noriginal:   %q\nre-encoded: %q",
@@ -521,7 +521,7 @@ func TestEncodeError(t *testing.T) {
 		{struct{ C complex128 }{0}, "unsupported type: complex128"},
 		{[]complex128{0}, "unsupported type: complex128"},
 	}
-
+	
 	for _, tt := range tests {
 		t.Run("", func(t *testing.T) {
 			err := NewEncoder(os.Stderr).Encode(tt.in)
@@ -541,7 +541,7 @@ type (
 	fun   func()
 	cplx  complex128
 	ints  []int
-
+	
 	sound2 struct{ S string }
 	food2  struct{ F []string }
 	fun2   func()
@@ -622,12 +622,12 @@ func TestEncodeTextMarshaler(t *testing.T) {
 		Ints:    ints{1, 2, 3, 4},
 		Ints2:   &ints2{1, 2, 3, 4},
 	}
-
+	
 	var buf bytes.Buffer
 	if err := NewEncoder(&buf).Encode(&x); err != nil {
 		t.Fatal(err)
 	}
-
+	
 	want := `Name = "Goblok"
 Sound = "miauw"
 Sound2 = "miauw"
@@ -642,7 +642,7 @@ Ints2 = "<1,2,3,4>"
   color = "black"
   type = "cat"
 `
-
+	
 	if buf.String() != want {
 		t.Error("\n" + buf.String())
 	}
@@ -671,12 +671,12 @@ func TestEncodeTOMLMarshaler(t *testing.T) {
 		Complex: complex(42, 666),
 		Fun:     func() { panic("x") },
 	}
-
+	
 	var buf bytes.Buffer
 	if err := NewEncoder(&buf).Encode(x); err != nil {
 		t.Fatal(err)
 	}
-
+	
 	want := `Name = "Goblok"
 Sound2 = "miauw"
 Food = ["chicken", "fish"]
@@ -691,7 +691,7 @@ Fun = "why would you do this?"
 [Sound]
   S = "miauw"
 `
-
+	
 	if buf.String() != want {
 		t.Error("\n" + buf.String())
 	}
@@ -719,7 +719,7 @@ func TestEncodeEmpty(t *testing.T) {
 			t.Error("\n" + buf.String())
 		}
 	})
-
+	
 	t.Run("toml", func(t *testing.T) {
 		var (
 			s   struct{ Text retNil2 }
@@ -744,7 +744,7 @@ func TestEncode32bit(t *testing.T) {
 		A, B, C string
 	}
 	type Outer struct{ Inner }
-
+	
 	encodeExpected(t, "embedded anonymous untagged struct",
 		Outer{Inner{"a", "b", "c"}},
 		"A = \"a\"\nB = \"b\"\nC = \"c\"\n",
@@ -753,7 +753,7 @@ func TestEncode32bit(t *testing.T) {
 
 // Skip invalid types if it has toml:"-"
 //
-// https://github.com/BurntSushi/toml/issues/345
+// https://github.com/gozelle/toml/issues/345
 func TestEncodeSkipInvalidType(t *testing.T) {
 	buf := new(bytes.Buffer)
 	err := NewEncoder(buf).Encode(struct {
@@ -770,7 +770,7 @@ func TestEncodeSkipInvalidType(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
+	
 	have := buf.String()
 	want := "str = \"a\"\n"
 	if have != want {
@@ -789,7 +789,7 @@ func TestEncodeDuration(t *testing.T) {
 		12345678 * time.Second,
 		4*time.Second + 2*time.Nanosecond,
 	}
-
+	
 	for _, tt := range tests {
 		encodeExpected(t, tt.String(),
 			struct{ Dur time.Duration }{Dur: tt},
@@ -854,7 +854,7 @@ func TestEncodeJSONNumber(t *testing.T) {
 				  k2 = 6.6
 		`},
 	}
-
+	
 	for _, tt := range tests {
 		t.Run("", func(t *testing.T) {
 			var buf bytes.Buffer
@@ -862,7 +862,7 @@ func TestEncodeJSONNumber(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-
+			
 			have := strings.TrimSpace(buf.String())
 			want := strings.ReplaceAll(strings.TrimSpace(tt.want), "\t", "")
 			if have != want {
@@ -877,10 +877,10 @@ func TestEncode(t *testing.T) {
 		Int int `toml:"_int"`
 	}
 	type NonStruct int
-
+	
 	date := time.Date(2014, 5, 11, 19, 30, 40, 0, time.UTC)
 	dateStr := "2014-05-11T19:30:40Z"
-
+	
 	tests := map[string]struct {
 		input      interface{}
 		wantOutput string
@@ -1186,7 +1186,7 @@ ArrayOfMixedSlices = [[1, 2], ["a", "b"]]
 			input:      map[string]string{"\n": "\n"},
 			wantOutput: `"\n" = "\n"` + "\n",
 		},
-
+		
 		"empty map name": {
 			input: map[string]interface{}{
 				"": map[string]int{"v": 1},
@@ -1201,14 +1201,14 @@ ArrayOfMixedSlices = [[1, 2], ["a", "b"]]
 			input:     map[int]string{1: ""},
 			wantError: errNonString,
 		},
-
+		
 		"tbl-in-arr-struct": {
 			input: struct {
 				Arr [][]struct{ A, B, C int }
 			}{[][]struct{ A, B, C int }{{{1, 2, 3}, {4, 5, 6}}}},
 			wantOutput: "Arr = [[{A = 1, B = 2, C = 3}, {A = 4, B = 5, C = 6}]]",
 		},
-
+		
 		"tbl-in-arr-map": {
 			input: map[string]interface{}{
 				"arr": []interface{}{[]interface{}{
@@ -1224,7 +1224,7 @@ ArrayOfMixedSlices = [[1, 2], ["a", "b"]]
 			},
 			wantOutput: `arr = [[{a = ["hello", "world"], b = [1.12, 4.1], c = 1, d = {e = "E"}, f = {A = 1, B = 2}, g = [{A = 3, B = 4}, {A = 5, B = 6}]}]]`,
 		},
-
+		
 		"slice of slice": {
 			input: struct {
 				Slices [][]struct{ Int int }
@@ -1258,7 +1258,7 @@ func encodeExpected(t *testing.T, label string, val interface{}, want string, wa
 		if err != nil {
 			return
 		}
-
+		
 		have := strings.TrimSpace(buf.String())
 		want = strings.TrimSpace(want)
 		if want != have {

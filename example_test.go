@@ -6,8 +6,8 @@ import (
 	"log"
 	"net/mail"
 	"time"
-
-	"github.com/BurntSushi/toml"
+	
+	"github.com/gozelle/toml"
 )
 
 func ExampleEncoder_Encode() {
@@ -27,7 +27,7 @@ func ExampleEncoder_Encode() {
 		log.Fatal(err)
 	}
 	fmt.Println(buf.String())
-
+	
 	// Output:
 	// counts = [1, 1, 2, 3, 5, 8]
 	// date = 2010-03-14T18:00:00Z
@@ -49,7 +49,7 @@ func ExampleMetaData_PrimitiveDecode() {
 		started = 1970
 		albums = ["The J. Geils Band", "Full House", "Blow Your Face Out"]
 		`
-
+	
 	type (
 		band struct {
 			Started int
@@ -60,24 +60,24 @@ func ExampleMetaData_PrimitiveDecode() {
 			Bands   map[string]toml.Primitive
 		}
 	)
-
+	
 	// Do the initial decode; reflection is delayed on Primitive values.
 	var music classics
 	md, err := toml.Decode(tomlBlob, &music)
 	if err != nil {
 		log.Fatal(err)
 	}
-
+	
 	// MetaData still includes information on Primitive values.
 	fmt.Printf("Is `bands.Springsteen` defined? %v\n",
 		md.IsDefined("bands", "Springsteen"))
-
+	
 	// Decode primitive data into Go values.
 	for _, artist := range music.Ranking {
 		// A band is a primitive value, so we need to decode it to get a real
 		// `band` value.
 		primValue := music.Bands[artist]
-
+		
 		var aBand band
 		err = md.PrimitiveDecode(primValue, &aBand)
 		if err != nil {
@@ -85,11 +85,11 @@ func ExampleMetaData_PrimitiveDecode() {
 		}
 		fmt.Printf("%s started in %d.\n", artist, aBand.Started)
 	}
-
+	
 	// Check to see if there were any fields left undecoded. Note that this
 	// won't be empty before decoding the Primitive value!
 	fmt.Printf("Undecoded: %q\n", md.Undecoded())
-
+	
 	// Output:
 	// Is `bands.Springsteen` defined? true
 	// Springsteen started in 1973.
@@ -116,7 +116,7 @@ func ExampleDecode() {
 			Location = "New Jersey"
 			Created = 1887-01-05T05:55:00Z
 	`
-
+	
 	type (
 		serverConfig struct {
 			Ports    []int
@@ -129,13 +129,13 @@ func ExampleDecode() {
 		}
 		servers map[string]server
 	)
-
+	
 	var config servers
 	_, err := toml.Decode(tomlBlob, &config)
 	if err != nil {
 		log.Fatal(err)
 	}
-
+	
 	for _, name := range []string{"alpha", "beta"} {
 		s := config[name]
 		fmt.Printf("Server: %s (ip: %s) in %s created on %s\n",
@@ -143,7 +143,7 @@ func ExampleDecode() {
 			s.Config.Created.Format("2006-01-02"))
 		fmt.Printf("Ports: %v\n", s.Config.Ports)
 	}
-
+	
 	// Output:
 	// Server: alpha (ip: 10.0.0.1) in Toronto created on 1987-07-05
 	// Ports: [8001 8002]
@@ -168,7 +168,7 @@ func Example_unmarshaler() {
 			"Scrooge McDuck <scrooge@duckburg.com>",
 		]
 	`
-
+	
 	var contacts struct {
 		// Implementation of the address type:
 		//
@@ -179,19 +179,19 @@ func Example_unmarshaler() {
 		//         a.Address, err = mail.ParseAddress(string(text))
 		//         return err
 		//     }
-
+		
 		Contacts []address
 	}
-
+	
 	_, err := toml.Decode(blob, &contacts)
 	if err != nil {
 		log.Fatal(err)
 	}
-
+	
 	for _, c := range contacts.Contacts {
 		fmt.Printf("%#v\n", c.Address)
 	}
-
+	
 	// Output:
 	// &mail.Address{Name:"Donald Duck", Address:"donald@duckburg.com"}
 	// &mail.Address{Name:"Scrooge McDuck", Address:"scrooge@duckburg.com"}
@@ -207,7 +207,7 @@ func Example_strictDecoding() {
 		key2 = "value2"
 		key3 = "value3"
 	`
-
+	
 	var conf struct {
 		Key1 string
 		Key3 string
@@ -216,7 +216,7 @@ func Example_strictDecoding() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
+	
 	fmt.Printf("Undecoded keys: %q\n", md.Undecoded())
 	// Output:
 	// Undecoded keys: ["key2"]
@@ -280,62 +280,62 @@ func (o *order) UnmarshalTOML(data interface{}) error {
 	// resulting in:
 	// d, _ := AsMap(data)
 	//
-
+	
 	d, _ := data.(map[string]interface{})
 	parts, _ := d["parts"].([]map[string]interface{})
-
+	
 	for _, p := range parts {
-
+		
 		typ, _ := p["type"].(string)
 		id, _ := p["id"].(string)
-
+		
 		// detect the type of part and handle each case
 		switch p["type"] {
 		case "valve":
-
+			
 			size := float32(p["size"].(float64))
 			rating := int(p["rating"].(int64))
-
+			
 			valve := &valve{
 				Type:   typ,
 				ID:     id,
 				Size:   size,
 				Rating: rating,
 			}
-
+			
 			o.parts = append(o.parts, valve)
-
+		
 		case "pipe":
-
+			
 			length := float32(p["length"].(float64))
 			diameter := int(p["diameter"].(int64))
-
+			
 			pipe := &pipe{
 				Type:     typ,
 				ID:       id,
 				Length:   length,
 				Diameter: diameter,
 			}
-
+			
 			o.parts = append(o.parts, pipe)
-
+		
 		case "cable":
-
+			
 			length := int(p["length"].(int64))
 			rating := float32(p["rating"].(float64))
-
+			
 			cable := &cable{
 				Type:   typ,
 				ID:     id,
 				Length: length,
 				Rating: rating,
 			}
-
+			
 			o.parts = append(o.parts, cable)
-
+			
 		}
 	}
-
+	
 	return nil
 }
 
@@ -370,16 +370,16 @@ func Example_unmarshalTOML() {
 		length = 12
 		rating = 3.1
 	`
-
+	
 	// See example_test.go in the source for the implementation of the order
 	// type.
 	o := &order{}
-
+	
 	err := toml.Unmarshal([]byte(blob), o)
 	if err != nil {
 		log.Fatal(err)
 	}
-
+	
 	fmt.Println(len(o.parts))
 	for _, part := range o.parts {
 		fmt.Println(part.Name())
